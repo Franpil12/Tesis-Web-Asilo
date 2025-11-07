@@ -1,0 +1,38 @@
+{
+  "name": "asilo-backend",
+  "version": "1.0.0",
+  "description": "Backend del sistema de gestión de pacientes del Asilo San Ignacio de Loyola",
+  "main": "src/app.js",
+  "type": "module",
+  "scripts": {
+    "dev": "nodemon --watch src src/app.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "backend",
+    "asilo",
+    "pacientes",
+    "nodejs",
+    "express",
+    "prisma"
+  ],
+  "author": "Franco Pillajo",
+  "license": "ISC",
+  "dependencies": {
+    "@prisma/client": "^6.19.0",
+    "bcryptjs": "^3.0.3",
+    "cors": "^2.8.5",
+    "express": "^5.1.0",
+    "jsonwebtoken": "^9.0.2"
+  },
+  "devDependencies": {
+    "autoprefixer": "^10.4.21",
+    "nodemon": "^3.1.10",
+    "postcss": "^8.5.6",
+    "prisma": "^6.19.0",
+    "tailwindcss": "^4.1.17"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}
