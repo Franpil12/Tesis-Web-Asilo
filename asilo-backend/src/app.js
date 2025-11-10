@@ -2,8 +2,8 @@ import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 
-import usuariosRoutes from "./routes/usuarios.js";
-import pacientesRoutes from "./routes/pacientes.js";
+import usuariosRoutes from "./routes/usuarios.routes.js";
+import pacientesRoutes from "./routes/pacientes.routes.js";
 import authRoutes from "./routes/auth.js";
 
 dotenv.config();

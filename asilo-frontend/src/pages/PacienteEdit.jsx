@@ -1,8 +1,9 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import api from "../api/client";
 
-export default function PacienteForm() {
+export default function PacienteEdit() {
+  const { id } = useParams();
   const navigate = useNavigate();
   const [form, setForm] = useState({
     nombre: "",
@@ -13,6 +14,12 @@ export default function PacienteForm() {
   });
   const [error, setError] = useState("");
 
+  useEffect(() => {
+    api.get(`/pacientes/${id}`)
+      .then((res) => setForm(res.data))
+      .catch(() => setError("Error al cargar datos"));
+  }, [id]);
+
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
@@ -20,26 +27,18 @@ export default function PacienteForm() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
-
-    if (!form.sexo) {
-        setError("Debe seleccionar el sexo del paciente");
-        return;
-    }
-
     try {
-        const data = { ...form, edad: parseInt(form.edad) || null };
-        await api.post("/pacientes", data);
-        navigate("/pacientes");
-    } catch (err) {
-        console.error(err);
-        setError("Error al registrar paciente");
+      await api.put(`/pacientes/${id}`, form);
+      navigate("/pacientes");
+    } catch {
+      setError("Error al actualizar paciente");
     }
- };
+  };
 
   return (
     <div className="max-w-md mx-auto bg-white mt-10 p-6 rounded-xl shadow-lg">
       <h2 className="text-2xl font-bold mb-4 text-blue-700 text-center">
-        Registrar Paciente
+        Editar Paciente
       </h2>
       {error && <p className="text-red-600 mb-4">{error}</p>}
 
@@ -51,7 +50,7 @@ export default function PacienteForm() {
             name="nombre"
             value={form.nombre}
             onChange={handleChange}
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring focus:ring-blue-200"
+            className="w-full border border-gray-300 rounded-lg px-3 py-2"
           />
         </div>
         <div>
@@ -101,9 +100,9 @@ export default function PacienteForm() {
         </div>
         <button
           type="submit"
-          className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700"
+          className="w-full bg-green-600 text-white py-2 rounded-lg hover:bg-green-700"
         >
-          Guardar
+          Actualizar
         </button>
       </form>
     </div>
