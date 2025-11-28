@@ -12,6 +12,9 @@ export default function PacienteForm() {
     estadoSalud: "",
   });
   const [error, setError] = useState("");
+  const [isCooldown, setIsCooldown] = useState(false);
+  
+  
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -20,6 +23,8 @@ export default function PacienteForm() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
+      // Evitar spam del botón → activar cooldown
+    
 
     if (!form.sexo) {
         setError("Debe seleccionar el sexo del paciente");
@@ -28,6 +33,10 @@ export default function PacienteForm() {
 
     try {
         const data = { ...form, edad: parseInt(form.edad) || null };
+        setIsCooldown(true);
+        setTimeout(() => {
+          setIsCooldown(false);
+        }, 2000);
         await api.post("/pacientes", data);
         navigate("/pacientes");
     } catch (err) {
@@ -100,12 +109,17 @@ export default function PacienteForm() {
           />
         </div>
         <button
-          type="submit"
-          className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700"
-        >
-          Guardar
+        type="submit"
+        disabled={isCooldown}
+        className={`w-full text-white py-2 rounded-lg 
+          ${isCooldown ? "bg-gray-400 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700"}
+        `}
+      >
+        {isCooldown ? "Espera..." : "Guardar"}
         </button>
       </form>
     </div>
   );
 }
+
+// Arreglar el boton de ingresar paciente por que si se presiona repetridamente manda mas d euna notificacion al sistema
