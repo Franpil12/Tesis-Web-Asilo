@@ -30,7 +30,7 @@ export default function Login() {
           backgroundImage: "url('/login-background.jpg')",
           boxShadow: "inset 0 0 0 1000px rgba(0, 0, 0, 0.4)",
         }}
-      > 
+      >       
 
         {/* LEFT SECTION */}
         <div className="col-span-7 flex p-32 text-white">

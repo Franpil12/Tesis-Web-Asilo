@@ -7,6 +7,7 @@ import PrivateRoute from "./auth/PrivateRoute";
 import UsuariosList from "./pages/UsuariosList";
 import UsuarioForm from "./pages/UsuarioForm";
 import RoleRoute from "./auth/RoleRoute";
+import PacienteDocumentos from "./pages/PacienteDocumentos";
 
 export default function App() {
   return (
@@ -52,6 +53,15 @@ export default function App() {
           <RoleRoute roles={["ADMIN"]}>
             <UsuariosList />
           </RoleRoute>
+        }
+      />
+
+      <Route
+        path="/pacientes/documentos/:id"
+        element={
+          <PrivateRoute>
+            <PacienteDocumentos />
+          </PrivateRoute>
         }
       />
 

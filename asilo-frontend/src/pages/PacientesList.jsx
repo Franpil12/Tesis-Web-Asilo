@@ -90,6 +90,7 @@ export default function PacientesList() {
               <th className="p-3">Edad</th>
               <th className="p-3">Sexo</th>
               <th className="p-3">Salud</th>
+              <th className="p-3">Documentos</th>
               {(user?.rol === "ADMIN" || user?.rol === "MEDICO") && (
                 <th className="p-3">Acciones</th>
               )}
@@ -109,7 +110,7 @@ export default function PacientesList() {
                 <td className="p-3 text-center">{p.sexo}</td>
 
                 {/* BADGE DE SALUD */}
-                <td className="p-3">
+                <td className="p-3 text-center">
                   {p.estadoSalud === "Estable" && (
                     <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-semibold">
                       Estable
@@ -142,11 +143,22 @@ export default function PacientesList() {
                   )}
                 </td>
 
+                {/* DOCUMENTOS — SIEMPRE VISIBLE */}
+                <td className="p-3 text-center">
+                  <Link
+                    to={`/pacientes/documentos/${p.id}`}
+                    className="px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-sm font-semibold hover:bg-purple-200 transition"
+                  >
+                    Documetos
+                  </Link>
+                </td>
+                
+                {/* ACCIONES (solo ADMIN / MÉDICO) */}
                 {(user?.rol === "ADMIN" || user?.rol === "MEDICO") && (
                   <td className="p-3 flex gap-4 justify-center">
                     <Link
                       to={`/pacientes/editar/${p.id}`}
-                      className="text-blue-600 hover:text-blue-800 font-semibold transition"
+                      className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-semibold hover:bg-blue-200 transition"
                     >
                       Editar
                     </Link>
@@ -154,7 +166,7 @@ export default function PacientesList() {
                     {user?.rol === "ADMIN" && (
                       <button
                         onClick={() => eliminar(p.id)}
-                        className="text-red-600 hover:text-red-800 font-semibold transition"
+                        className="px-3 py-1 bg-red-100 text-red-700 rounded-full text-sm font-semibold hover:bg-red-200 transition"
                       >
                         Eliminar
                       </button>

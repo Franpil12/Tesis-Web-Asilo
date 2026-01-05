@@ -6,7 +6,6 @@
 
 generator client {
   provider = "prisma-client-js"
-
 }
 
 datasource db {
@@ -21,6 +20,9 @@ model Usuario {
   passwordHash String
   rol          Rol      @default(ENFERMERA)
   creadoEn     DateTime @default(now())
+
+  // ✅ NUEVO (relación inversa)
+  documentosSubidos DocumentoPaciente[]
 }
 
 model Paciente {
@@ -32,8 +34,9 @@ model Paciente {
   fechaIngreso  DateTime @default(now())
   estadoSalud   String?
   creadoEn      DateTime @default(now())
-  // responsableId Int?  // si luego quieres FK a Usuario
-  // responsable   Usuario? @relation(fields: [responsableId], references: [id])
+
+  // ✅ NUEVO (relación inversa)
+  documentos DocumentoPaciente[]
 }
 
 enum Rol {
@@ -45,4 +48,32 @@ enum Rol {
 enum Sexo {
   M
   F
+}
+
+
+model DocumentoPaciente {
+  id          Int            @id @default(autoincrement())
+  pacienteId  Int
+  paciente    Paciente       @relation(fields: [pacienteId], references: [id], onDelete: Cascade)
+
+  area        AreaDocumento
+  titulo      String?
+  nombreOriginal String
+  mimeType    String
+  tamanoBytes Int
+  rutaArchivo String        // Ej: "uploads/pacientes/1/social/archivo.pdf"
+
+  creadoEn    DateTime       @default(now())
+
+  // opcional por si luego quieres saber quién lo subió
+  usuarioId   Int?
+  usuario     Usuario?       @relation(fields: [usuarioId], references: [id], onDelete: SetNull)
+}
+
+enum AreaDocumento {
+  SOCIAL
+  MEDICO
+  PSICOLOGICO
+  FISICO
+  ENFERMERIA
 }
