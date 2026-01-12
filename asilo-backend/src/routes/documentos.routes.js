@@ -136,4 +136,38 @@ router.get("/:area/:pacienteId", auth, async (req, res) => {
   }
 });
 
+// ✅ ELIMINAR DOCUMENTO (BD + archivo físico)
+// DELETE /api/documentos/:id
+router.delete("/:id", auth, async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+
+    const doc = await prisma.documentoPaciente.findUnique({
+      where: { id },
+    });
+
+    if (!doc) {
+      return res.status(404).json({ message: "Documento no encontrado" });
+    }
+
+    // ✅ borrar registro en BD
+    await prisma.documentoPaciente.delete({
+      where: { id },
+    });
+
+    // ✅ borrar archivo físico
+    const filePath = path.join(process.cwd(), doc.rutaArchivo);
+
+    if (fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
+    }
+
+    return res.json({ message: "Documento eliminado correctamente" });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ message: "Error al eliminar documento" });
+  }
+});
+
+
 export default router;

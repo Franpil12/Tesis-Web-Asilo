@@ -3,8 +3,7 @@ import { useParams, Link } from "react-router-dom";
 import api from "../api/client";
 
 const TABS = ["Social", "Medico", "Psicologico", "Fisico", "Enfermeria"];
-
-const tabToArea = (tab) => tab.toLowerCase(); // Social -> social
+const tabToArea = (tab) => tab.toLowerCase();
 
 export default function PacienteDocumentos() {
   const { id } = useParams();
@@ -21,11 +20,19 @@ export default function PacienteDocumentos() {
   const [subiendo, setSubiendo] = useState(false);
   const [archivo, setArchivo] = useState(null);
   const [titulo, setTitulo] = useState("");
+  const [uiMsg, setUiMsg] = useState(""); // mensajes dentro de la página (sin alerts)
+
+  // Modal eliminar
+  const [modalEliminarOpen, setModalEliminarOpen] = useState(false);
+  const [docAEliminar, setDocAEliminar] = useState(null);
+  const [eliminando, setEliminando] = useState(false);
 
   // URL base para abrir archivos (/uploads)
   const FILES_BASE_URL = useMemo(() => {
     const base = api?.defaults?.baseURL || "";
-    return base.endsWith("/api") ? base.replace(/\/api$/, "") : "http://localhost:3001";
+    return base.endsWith("/api")
+      ? base.replace(/\/api$/, "")
+      : "http://localhost:3001";
   }, []);
 
   const cargarPaciente = async () => {
@@ -33,6 +40,7 @@ export default function PacienteDocumentos() {
       const res = await api.get(`/pacientes/${id}`);
       setPaciente(res.data);
     } catch (err) {
+      console.error(err);
       setError("No se pudo cargar la información del paciente");
     } finally {
       setLoading(false);
@@ -55,12 +63,12 @@ export default function PacienteDocumentos() {
 
   useEffect(() => {
     cargarPaciente();
-    // cargar docs del tab inicial
     cargarDocs("Social");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   const cambiarTab = async (tab) => {
+    setUiMsg("");
     setTabActiva(tab);
     setArchivo(null);
     setTitulo("");
@@ -69,22 +77,28 @@ export default function PacienteDocumentos() {
 
   const subirPDF = async (e) => {
     e.preventDefault();
+    setUiMsg("");
 
     const area = tabToArea(tabActiva);
 
+    if (!titulo.trim()) {
+      setUiMsg("El título del documento es obligatorio.");
+      return;
+    }
+
     if (!archivo) {
-      alert("Selecciona un archivo PDF.");
+      setUiMsg("Selecciona un archivo PDF.");
       return;
     }
 
     if (archivo.type !== "application/pdf") {
-      alert("Solo se permiten archivos PDF.");
+      setUiMsg("Solo se permiten archivos PDF.");
       return;
     }
 
     const formData = new FormData();
     formData.append("archivo", archivo);
-    if (titulo.trim()) formData.append("titulo", titulo.trim());
+    formData.append("titulo", titulo.trim());
 
     setSubiendo(true);
     try {
@@ -92,20 +106,57 @@ export default function PacienteDocumentos() {
         headers: { "Content-Type": "multipart/form-data" },
       });
 
+      // ✅ Sin alert: solo limpiar y recargar
       setArchivo(null);
       setTitulo("");
       await cargarDocs(tabActiva);
-      alert("Documento subido correctamente.");
     } catch (err) {
       console.error(err);
       const msg =
         err?.response?.data?.message ||
         err?.response?.data?.error ||
         "Error al subir documento";
-      alert(msg);
+      setUiMsg(msg);
     } finally {
       setSubiendo(false);
     }
+  };
+
+  // Abrir modal eliminar
+  const pedirEliminar = (doc) => {
+    setUiMsg("");
+    setDocAEliminar(doc);
+    setModalEliminarOpen(true);
+  };
+
+  // Confirmar eliminación (sin alerts)
+  const confirmarEliminar = async () => {
+    if (!docAEliminar?.id) return;
+    setUiMsg("");
+    setEliminando(true);
+
+    try {
+      await api.delete(`/documentos/${docAEliminar.id}`);
+      setModalEliminarOpen(false);
+      setDocAEliminar(null);
+      await cargarDocs(tabActiva);
+    } catch (err) {
+      console.error(err);
+      const msg =
+        err?.response?.data?.message ||
+        err?.response?.data?.error ||
+        "Error al eliminar documento";
+      setUiMsg(msg);
+      // Mantengo el modal abierto para que el usuario vea que pasó algo
+    } finally {
+      setEliminando(false);
+    }
+  };
+
+  const cerrarModal = () => {
+    if (eliminando) return;
+    setModalEliminarOpen(false);
+    setDocAEliminar(null);
   };
 
   const renderContenido = () => {
@@ -120,43 +171,78 @@ export default function PacienteDocumentos() {
           <span className="font-semibold">{tabActiva}</span>.
         </p>
 
+        {/* Mensajes dentro de la página (sin alert) */}
+        {uiMsg && (
+          <div className="mb-4 px-4 py-3 rounded-xl border border-red-200 bg-red-50 text-red-700 text-sm">
+            {uiMsg}
+          </div>
+        )}
+
         {/* SUBIR PDF */}
         <form
           onSubmit={subirPDF}
-          className="bg-white rounded-xl p-4 shadow border border-purple-100"
+          className="bg-gradient-to-br from-purple-50 to-white rounded-2xl p-5 shadow-md border border-purple-200"
         >
-          <div className="grid md:grid-cols-3 gap-3 items-end">
+          <h4 className="text-sm font-bold text-purple-700 mb-4 uppercase tracking-wide">
+            Subir nuevo documento
+          </h4>
+
+          <div className="grid md:grid-cols-3 gap-4 items-end">
+            {/* TÍTULO */}
             <div className="md:col-span-1">
               <label className="block text-xs font-semibold text-slate-600 mb-1">
-                Título (opcional)
+                Título del documento <span className="text-red-500">*</span>
               </label>
               <input
                 value={titulo}
                 onChange={(e) => setTitulo(e.target.value)}
-                placeholder={`Ej: Documento ${tabActiva}`}
-                className="w-full px-3 py-2 rounded-lg border border-gray-200 focus:ring-2 focus:ring-purple-300 focus:outline-none text-sm"
+                required
+                placeholder={`Ej: Informe ${tabActiva}`}
+                className="w-full px-4 py-2 rounded-lg border border-gray-300 
+                           focus:ring-2 focus:ring-purple-400 focus:outline-none text-sm"
               />
             </div>
 
+            {/* ARCHIVO */}
             <div className="md:col-span-1">
               <label className="block text-xs font-semibold text-slate-600 mb-1">
-                Archivo PDF
+                Archivo PDF <span className="text-red-500">*</span>
               </label>
+
               <input
                 type="file"
                 accept="application/pdf"
+                required
                 onChange={(e) => setArchivo(e.target.files?.[0] || null)}
-                className="w-full text-sm"
+                className="block w-full text-sm text-gray-700
+                           file:mr-4 file:py-2 file:px-4
+                           file:rounded-full file:border-0
+                           file:text-sm file:font-semibold
+                           file:bg-purple-100 file:text-purple-700
+                           hover:file:bg-purple-200
+                           cursor-pointer"
               />
+
+              {archivo && (
+                <p className="mt-2 text-xs text-slate-600">
+                  Archivo seleccionado:{" "}
+                  <span className="font-semibold">{archivo.name}</span>
+                </p>
+              )}
             </div>
 
+            {/* BOTÓN */}
             <div className="md:col-span-1">
               <button
                 type="submit"
                 disabled={subiendo}
-                className="w-full bg-purple-600 text-white px-4 py-2 rounded-lg shadow hover:bg-purple-700 transition disabled:opacity-60"
+                className="w-full flex items-center justify-center gap-2
+                           bg-purple-600 text-white px-4 py-2 rounded-lg
+                           font-semibold shadow-md
+                           hover:bg-purple-700 hover:shadow-lg
+                           transition disabled:opacity-60"
               >
-                {subiendo ? "Subiendo..." : "Subir PDF"}
+                {subiendo ? "Subiendo..." : "📄 Subir documento"}
               </button>
             </div>
           </div>
@@ -196,19 +282,81 @@ export default function PacienteDocumentos() {
                     </p>
                   </div>
 
-                  <a
-                    href={`${FILES_BASE_URL}/${d.rutaArchivo}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-purple-700 font-semibold hover:underline"
-                  >
-                    Abrir PDF
-                  </a>
+                  <div className="flex items-center gap-3">
+                    <a
+                      href={`${FILES_BASE_URL}/${d.rutaArchivo}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-purple-700 font-semibold hover:underline"
+                    >
+                      Abrir PDF
+                    </a>
+
+                    <button
+                      type="button"
+                      onClick={() => pedirEliminar(d)}
+                      className="px-3 py-1 rounded-full bg-red-100 text-red-700 text-sm font-semibold hover:bg-red-200 transition"
+                    >
+                      Eliminar
+                    </button>
+                  </div>
                 </li>
               ))}
             </ul>
           )}
         </div>
+
+        {/* MODAL ELIMINAR (centrado) */}
+        {modalEliminarOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center">
+            {/* Fondo oscuro */}
+            <div
+              className="absolute inset-0 bg-black/40"
+              onClick={cerrarModal}
+            />
+
+            {/* Caja modal */}
+            <div className="relative w-full max-w-md mx-4 bg-white rounded-2xl shadow-2xl border border-gray-100 p-6">
+              <h3 className="text-lg font-extrabold text-slate-800">
+                ¿Eliminar documento?
+              </h3>
+              <p className="text-sm text-slate-600 mt-2">
+                Esta acción no se puede deshacer.
+              </p>
+
+              {docAEliminar && (
+                <div className="mt-4 p-3 rounded-xl bg-gray-50 border border-gray-100">
+                  <p className="text-sm font-semibold text-slate-700">
+                    {docAEliminar.titulo || "Documento"}
+                  </p>
+                  <p className="text-xs text-slate-500">
+                    {docAEliminar.nombreOriginal}
+                  </p>
+                </div>
+              )}
+
+              <div className="mt-5 flex items-center justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={cerrarModal}
+                  disabled={eliminando}
+                  className="px-4 py-2 rounded-lg border border-gray-200 text-slate-700 font-semibold hover:bg-gray-50 transition disabled:opacity-60"
+                >
+                  Cancelar
+                </button>
+
+                <button
+                  type="button"
+                  onClick={confirmarEliminar}
+                  disabled={eliminando}
+                  className="px-4 py-2 rounded-lg bg-red-600 text-white font-semibold shadow hover:bg-red-700 transition disabled:opacity-60"
+                >
+                  {eliminando ? "Eliminando..." : "Sí, eliminar"}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   };
@@ -255,10 +403,16 @@ export default function PacienteDocumentos() {
             <h2 className="text-2xl font-bold text-slate-800">
               {paciente?.nombre} {paciente?.apellido}
             </h2>
+
             <p className="text-sm text-slate-600 mt-1">
-              ID: <span className="font-semibold">{paciente?.id}</span> • Edad:{" "}
-              <span className="font-semibold">{paciente?.edad}</span> años • Sexo:{" "}
-              <span className="font-semibold">{paciente?.sexo}</span>
+              Cédula:{" "}
+              <span className="font-semibold">{paciente?.cedula ?? "—"}</span>{" "}
+              • Edad:{" "}
+              <span className="font-semibold">
+                {paciente?.edadCalculada ?? "—"}
+              </span>{" "}
+              • Sexo:{" "}
+              <span className="font-semibold">{paciente?.sexo ?? "—"}</span>
             </p>
           </div>
 
@@ -273,7 +427,8 @@ export default function PacienteDocumentos() {
       {/* TABS */}
       <div className="bg-white/80 rounded-2xl p-4 shadow border border-purple-100">
         <p className="text-sm text-slate-600 mb-3">
-          Selecciona el área para visualizar o registrar la información correspondiente del paciente.
+          Selecciona el área para visualizar o registrar la información
+          correspondiente del paciente.
         </p>
 
         <div className="flex flex-wrap gap-3">
@@ -282,18 +437,17 @@ export default function PacienteDocumentos() {
               key={tab}
               onClick={() => cambiarTab(tab)}
               className={`px-4 py-2 rounded-full text-sm font-semibold shadow-sm transition transform hover:-translate-y-0.5
-              ${
-                tabActiva === tab
-                  ? "bg-purple-600 text-white shadow-md"
-                  : "bg-purple-50 text-purple-700 hover:bg-purple-100"
-              }`}
+                ${
+                  tabActiva === tab
+                    ? "bg-purple-600 text-white shadow-md"
+                    : "bg-purple-50 text-purple-700 hover:bg-purple-100"
+                }`}
             >
               {tab}
             </button>
           ))}
         </div>
 
-        {/* CONTENIDO */}
         {renderContenido()}
       </div>
     </div>

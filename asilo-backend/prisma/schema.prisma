@@ -26,14 +26,15 @@ model Usuario {
 }
 
 model Paciente {
-  id            Int      @id @default(autoincrement())
-  nombre        String
-  apellido      String
-  edad          Int?
-  sexo          Sexo?
-  fechaIngreso  DateTime @default(now())
-  estadoSalud   String?
-  creadoEn      DateTime @default(now())
+  id              Int       @id @default(autoincrement())
+  cedula          String?   @unique
+  nombre          String
+  apellido        String
+  fechaNacimiento DateTime?
+  sexo            Sexo?
+  fechaIngreso    DateTime  @default(now())
+  estadoSalud     String?
+  creadoEn        DateTime  @default(now())
 
   // ✅ NUEVO (relación inversa)
   documentos DocumentoPaciente[]
@@ -50,24 +51,23 @@ enum Sexo {
   F
 }
 
-
 model DocumentoPaciente {
-  id          Int            @id @default(autoincrement())
-  pacienteId  Int
-  paciente    Paciente       @relation(fields: [pacienteId], references: [id], onDelete: Cascade)
+  id         Int      @id @default(autoincrement())
+  pacienteId Int
+  paciente   Paciente @relation(fields: [pacienteId], references: [id], onDelete: Cascade)
 
-  area        AreaDocumento
-  titulo      String?
+  area           AreaDocumento
+  titulo         String?
   nombreOriginal String
-  mimeType    String
-  tamanoBytes Int
-  rutaArchivo String        // Ej: "uploads/pacientes/1/social/archivo.pdf"
+  mimeType       String
+  tamanoBytes    Int
+  rutaArchivo    String // Ej: "uploads/pacientes/1/social/archivo.pdf"
 
-  creadoEn    DateTime       @default(now())
+  creadoEn DateTime @default(now())
 
   // opcional por si luego quieres saber quién lo subió
-  usuarioId   Int?
-  usuario     Usuario?       @relation(fields: [usuarioId], references: [id], onDelete: SetNull)
+  usuarioId Int?
+  usuario   Usuario? @relation(fields: [usuarioId], references: [id], onDelete: SetNull)
 }
 
 enum AreaDocumento {
